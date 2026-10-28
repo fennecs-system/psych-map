@@ -8,7 +8,7 @@ ROOT = pathlib.Path(__file__).resolve().parent
 INBOX = ROOT / "ingest" / "inbox"
 REJECT = ROOT / "ingest" / "rejected"
 CACHE = ROOT / "ingest" / "geocache.json"
-OUT = ROOT / "public" / "data.json"
+OUT = ROOT / "docs" / "data.json"
 MELB = (-37.8136, 144.9631)
 
 KEYWORDS = {

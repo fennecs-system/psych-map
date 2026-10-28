@@ -36,6 +36,6 @@ Identity rule: do NOT infer identity from pronouns or from who they work with. O
 
 Re-adding someone already on the map is fine and useful when you have richer details (address, email, booking link,
 pronouns, full bio) — the ingest merges by name. Check what's already there with:
-    python3 -c "import json;print('\n'.join(p['name']+' | '+p['suburb'] for p in json.load(open('/Users/fennecs/psych-map/public/data.json'))['people']))" | grep -i <name>
+    python3 -c "import json;print('\n'.join(p['name']+' | '+p['suburb'] for p in json.load(open('/Users/fennecs/psych-map/docs/data.json'))['people']))" | grep -i <name>
 
 Final reply: one short paragraph: count written, sources that worked, sources that stayed blocked.
