@@ -35,7 +35,7 @@ input:focus{border-color:var(--lilac2)}
 .mode:hover{background:#2a2440}
 .chip.on{color:var(--lilac);border-color:var(--lilac2);background:var(--lilacbg)}
 .chip b{font-weight:400;opacity:.6;margin-left:3px}
-#list{overflow-y:auto;flex:1;min-height:0}
+#list{overflow-y:auto;flex:1;min-height:0;overscroll-behavior:contain}
 #list::-webkit-scrollbar{width:8px}#list::-webkit-scrollbar-thumb{background:var(--line)}
 .item{padding:10px 16px;border-bottom:1px solid var(--line);cursor:pointer}
 .item:hover,.item.sel{background:var(--panel2)}
@@ -48,7 +48,7 @@ input:focus{border-color:var(--lilac2)}
 .tags{margin-top:5px;display:flex;flex-wrap:wrap;gap:4px}
 .tag{font-size:11.5px;padding:0 5px;border-radius:2px;background:var(--lilacbg);color:var(--lilac)}
 #map{height:100%;background:#0e0e11}
-.osm-dark{filter:invert(1) hue-rotate(200deg) saturate(.35) brightness(.85) contrast(.9)}
+.leaflet-tile-pane{filter:invert(1) hue-rotate(200deg) saturate(.35) brightness(.85) contrast(.9);will-change:transform}
 .empty{padding:24px 16px;color:var(--dim)}
 /* markers */
 .pin{width:12px;height:12px;border-radius:50%;background:var(--lilac2);border:2px solid #0b0b0d;box-shadow:0 0 0 1px var(--lilac2),0 0 10px #a78bfa88}
@@ -68,7 +68,17 @@ input:focus{border-color:var(--lilac2)}
 .btn{display:inline-block;margin-top:9px;padding:5px 10px;border:1px solid var(--lilac2);border-radius:3px;color:var(--lilac)!important;text-decoration:none;background:var(--lilacbg)}
 .leaflet-control-zoom a{background:var(--panel)!important;color:var(--lilac)!important;border-color:var(--line)!important}
 .leaflet-control-attribution{background:#0b0b0dcc!important;color:var(--dim)!important}
-@media (max-width:760px){#app{grid-template-columns:1fr;grid-template-rows:45vh 55vh}aside{order:2}#map{order:1}}
+aside,#map{min-width:0}
+@media (max-width:760px){
+  #app{grid-template-columns:minmax(0,1fr);grid-template-rows:42vh 58vh;height:100dvh}
+  aside{order:2}#map{order:1}
+  header{padding:10px 12px 8px}
+  .chips{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;margin-left:-12px;margin-right:-12px;padding:0 12px}
+  .chips::-webkit-scrollbar{display:none}
+  .chip,.mode,.plabel{flex:none}
+  .item{padding:9px 12px}
+  .leaflet-popup-content{width:min(300px,70vw)!important}
+}
 </style>
 </head>
 <body>
@@ -88,22 +98,67 @@ input:focus{border-color:var(--lilac2)}
 <script>
 const PRON = ["she/her","he/him","they/them","other"];
 const KW = ["trans","lgbt","dissociation","did","trauma","schema","plural","kink","sex","emdr"];
-const map = L.map("map",{zoomControl:true}).setView([-37.8136,144.9631],11);
+const LOCAL = /^(localhost|127\.|192\.168\.|10\.)/.test(location.hostname);
+const POLL_MS = LOCAL ? 3000 : 60000;   // live while agents run locally; lazy on Pages
+const PAGE = 80;                         // list rows rendered per batch
+
+const map = L.map("map",{zoomControl:true, preferCanvas:true}).setView([-37.8136,144.9631],11);
 L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png",{
-  attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',maxZoom:19,className:"osm-dark"}).addTo(map);
+  attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',maxZoom:19}).addTo(map);
 
 const people = new Map(), markers = new Map();
 const active = new Set(), pactive = new Set(); let mode = "or", q = "", sel = null, first = true;
+let details = null, detailsP = null;
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const safeUrl = u => /^https?:\/\//i.test(u||"") ? u : "";
 
-function icon(p, fresh){
-  const cls = fresh ? " drop" : "";
-  return p.trans_nb
-    ? L.divIcon({className:"", html:`<div class="tpin${cls}">🏳️‍⚧️</div>`, iconSize:[20,20], iconAnchor:[10,10]})
-    : L.divIcon({className:"", html:`<div class="pin${p.precision==="approx"?" approx":""}${cls}"></div>`, iconSize:[12,12], iconAnchor:[6,6]});
+function loadDetails(){
+  if (!detailsP) detailsP = fetch("details.json?t="+lastUpdated, {cache:"no-store"}).then(r=>r.json())
+    .then(d=>{ details = d.people; for (const [id,m] of markers) if (m.isPopupOpen()) m.setPopupContent(popup(id)); return details; })
+    .catch(()=>{ detailsP = null; });
+  return detailsP;
 }
-function popup(p){
+
+// canvas renderer that paints a soft halo behind each dot (the old CSS box-shadow glow, but cheap)
+const GLOW = 2.8;
+const GlowCanvas = L.Canvas.extend({
+  _updateCircle(layer){
+    if (!this._drawing || layer._empty()) return;
+    const p = layer._point, ctx = this._ctx, r = Math.max(Math.round(layer._radius), 1), R = r * GLOW;
+    const g = ctx.createRadialGradient(p.x, p.y, r * .6, p.x, p.y, R);
+    g.addColorStop(0, "rgba(167,139,250,.5)"); g.addColorStop(1, "rgba(167,139,250,0)");
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(p.x, p.y, R, 0, Math.PI * 2); ctx.fill();
+    L.Canvas.prototype._updateCircle.call(this, layer);
+  }
+});
+const GlowDot = L.CircleMarker.extend({
+  _updateBounds(){ // include the halo so partial redraws don't leave smears
+    const R = this._radius * GLOW + this._clickTolerance(), p = this._point;
+    this._pxBounds = new L.Bounds(p.subtract([R, R]), p.add([R, R]));
+  }
+});
+const canvas = new GlowCanvas({padding:.3});
+const LILAC = "#a78bfa";
+const dotStyle = p => ({renderer:canvas, radius:5, weight:p.precision==="approx"?1.5:2, color:p.precision==="approx"?LILAC:"#0b0b0d",
+  fillColor:LILAC, fillOpacity:p.precision==="approx"?0:1, dashArray:p.precision==="approx"?"2 2":null});
+function makeMarker(p, fresh){
+  let m;
+  if (p.trans_nb){
+    const icon = L.divIcon({className:"", html:`<div class="tpin${fresh?" drop":""}">🏳️‍⚧️</div>`, iconSize:[20,20], iconAnchor:[10,10]});
+    m = L.marker([p.lat,p.lng], {icon, zIndexOffset:500});
+  } else {
+    m = new GlowDot([p.lat,p.lng], dotStyle(p));
+    if (fresh){ let r = 14; m.setRadius(r);
+      const t = setInterval(()=>{ r -= 1.5; if (r <= 5){ r = 5; clearInterval(t); } m.setRadius(r); }, 40); }
+  }
+  // popup HTML is built only when opened
+  m.bindPopup(()=>popup(p.id), {maxWidth:330, autoPanPadding:[20,20]});
+  m.on("popupopen", ()=>{ if (!details) loadDetails(); });
+  m.on("click", ()=>markerClick(p.id));
+  return m;
+}
+function popup(id){
+  const s = people.get(id), p = (details && details[id]) || s;
   const web = safeUrl(p.website), book = safeUrl(p.booking_url) || web;
   const loc = [p.address, p.suburb].filter(Boolean).join(", ") || (p.telehealth_only ? "telehealth only" : "");
   return `<div class="pp"><h3>${p.trans_nb?"🏳️‍⚧️ ":""}${esc(p.name)}</h3>
@@ -114,9 +169,9 @@ function popup(p){
     ${p.email?`<div class="row"><span class="k">email</span><a href="mailto:${esc(p.email)}">${esc(p.email)}</a></div>`:""}
     ${web?`<div class="row"><span class="k">web</span><a href="${esc(web)}" target="_blank" rel="noopener">${esc(web.replace(/^https?:\/\/(www\.)?/,"").slice(0,40))}</a></div>`:""}
     <div class="tags">${p.keywords.map(k=>`<span class="tag">${k}</span>`).join("")}</div>
-    ${p.description?`<div class="desc">${esc(p.description)}</div>`:""}
+    ${!details?`<div class="desc">loading details…</div>`:p.description?`<div class="desc">${esc(p.description)}</div>`:""}
     ${book?`<a class="btn" href="${esc(book)}" target="_blank" rel="noopener">→ ${p.booking_url?"book":"website"}</a>`:""}
-    <div class="row" style="color:var(--dim);font-size:10px;margin-top:8px">src: ${p.sources.map((s,i)=>`<a href="${esc(safeUrl(s))}" target="_blank" rel="noopener">[${i+1}]</a>`).join(" ")} · loc: ${esc(p.precision)}</div></div>`;
+    ${p.sources?`<div class="row" style="color:var(--dim);font-size:10px;margin-top:8px">src: ${p.sources.map((s,i)=>`<a href="${esc(safeUrl(s))}" target="_blank" rel="noopener">[${i+1}]</a>`).join(" ")} · loc: ${esc(p.precision)}</div>`:""}</div>`;
 }
 function matches(p){
   if (pactive.size && !(p.pron_tags||[]).some(t=>pactive.has(t))) return false;
@@ -126,7 +181,8 @@ function matches(p){
     if (mode==="and" ? !ks.every(has) : !ks.some(has)) return false;
   }
   if (!q) return true;
-  return [p.name,p.suburb,p.practice,p.pronouns,p.description,p.keywords.join(" ")].join(" ").toLowerCase().includes(q);
+  const d = details && details[p.id];
+  return [p.name,p.suburb,p.practice,p.pronouns,p.keywords.join(" "), d ? d.description+" "+d.specialties : ""].join(" ").toLowerCase().includes(q);
 }
 function renderChips(){
   const counts = Object.fromEntries(KW.map(k=>[k,0]));
@@ -138,57 +194,93 @@ function renderPChips(){
   people.forEach(p=>(p.pron_tags||[]).forEach(t=>counts[t]!=null&&counts[t]++));
   document.getElementById("pchips").innerHTML = `<span class="plabel">pronouns</span>` + PRON.map(k=>`<span class="chip${pactive.has(k)?" on":""}" data-p="${k}">${k}<b>${counts[k]}</b></span>`).join("");
 }
-function renderList(newIds){
-  const list = document.getElementById("list");
-  const shown = [...people.values()].filter(matches).sort((a,b)=>b.added-a.added || a.name.localeCompare(b.name));
-  markers.forEach((m,id)=>{ const vis = matches(people.get(id)); if (vis && !map.hasLayer(m)) m.addTo(map); if (!vis && map.hasLayer(m)) m.remove(); });
-  document.getElementById("count").textContent = `${shown.length}/${people.size} shown`;
-  if (!shown.length){ list.innerHTML = `<div class="empty">${people.size?"no matches":"waiting for agents to report in…"}</div>`; return; }
-  list.innerHTML = shown.map(p=>`<div class="item${sel===p.id?" sel":""}${newIds.has(p.id)?" new":""}" data-id="${esc(p.id)}">
+
+// list: render in batches of PAGE as the user scrolls
+const listEl = document.getElementById("list");
+let shown = [], rendered = 0, lastListKey = "", newSet = new Set();
+const rowHtml = p => `<div class="item${sel===p.id?" sel":""}${newSet.has(p.id)?" new":""}" data-id="${esc(p.id)}">
     <div><span class="nm">${p.trans_nb?"🏳️‍⚧️ ":""}${esc(p.name)}</span>${p.pronouns?`<span class="pr">${esc(p.pronouns)}</span>`:""}</div>
     <div class="sub">${esc([p.suburb||(p.telehealth_only?"telehealth":""),p.practice].filter(Boolean).join(" · "))}</div>
-    <div class="tags">${p.keywords.map(k=>`<span class="tag">${k}</span>`).join("")}</div></div>`).join("");
+    <div class="tags">${p.keywords.map(k=>`<span class="tag">${k}</span>`).join("")}</div></div>`;
+const sentinel = document.createElement("div"); sentinel.style.height = "1px";
+function appendRows(){
+  if (rendered >= shown.length) return;
+  const next = shown.slice(rendered, rendered + PAGE); rendered += next.length;
+  sentinel.insertAdjacentHTML("beforebegin", next.map(rowHtml).join(""));
 }
+new IntersectionObserver(es=>{ if (es.some(e=>e.isIntersecting)) appendRows(); }, {root:listEl, rootMargin:"600px"}).observe(sentinel);
+
+let filterQueued = false;
+function renderList(newIds, force){
+  shown = [...people.values()].filter(matches).sort((a,b)=>b.added-a.added || a.name.localeCompare(b.name));
+  const vis = new Set(shown.map(p=>p.id));
+  markers.forEach((m,id)=>{ const v = vis.has(id), on = map.hasLayer(m); if (v && !on) m.addTo(map); else if (!v && on) m.remove(); });
+  document.getElementById("count").textContent = `${shown.length}/${people.size} shown`;
+  const key = shown.map(p=>p.id).join("|");
+  if (!force && !newIds.size && key === lastListKey) return;
+  lastListKey = key; newSet = newIds;
+  const top = listEl.scrollTop;
+  if (!shown.length){ listEl.innerHTML = `<div class="empty">${people.size?"no matches":"waiting for agents to report in…"}</div>`; return; }
+  listEl.innerHTML = ""; listEl.appendChild(sentinel); rendered = 0;
+  while (rendered < shown.length && (rendered < PAGE || rendered < Math.ceil((top + listEl.clientHeight) / 60))) appendRows();
+  listEl.scrollTop = top;
+}
+const refilter = () => { if (filterQueued) return; filterQueued = true; requestAnimationFrame(()=>{ filterQueued = false; renderList(new Set(), true); }); };
+
 function focus(id){
   const p = people.get(id), m = markers.get(id); if (!p||!m) return;
   sel = id; map.flyTo([p.lat,p.lng], Math.max(map.getZoom(),14), {duration:.6});
-  m.openPopup();
-  document.querySelectorAll(".item").forEach(e=>e.classList.toggle("sel", e.dataset.id===id));
+  map.once("moveend", ()=>m.openPopup());
+  listEl.querySelectorAll(".item.sel").forEach(e=>e.classList.remove("sel"));
+  listEl.querySelector(`.item[data-id="${CSS.escape(id)}"]`)?.classList.add("sel");
 }
-document.getElementById("list").addEventListener("click", e=>{ const it = e.target.closest(".item"); if (it) focus(it.dataset.id); });
+function markerClick(id){
+  sel = id; listEl.querySelectorAll(".item.sel").forEach(e=>e.classList.remove("sel"));
+  const el = listEl.querySelector(`.item[data-id="${CSS.escape(id)}"]`);
+  if (el){ el.classList.add("sel"); el.scrollIntoView({block:"nearest"}); }
+}
+listEl.addEventListener("click", e=>{ const it = e.target.closest(".item"); if (it) focus(it.dataset.id); });
 document.getElementById("chips").addEventListener("click", e=>{
-  if (e.target.closest("#mode")){ mode = mode==="and"?"or":"and"; renderChips(); renderList(new Set()); return; }
+  if (e.target.closest("#mode")){ mode = mode==="and"?"or":"and"; renderChips(); refilter(); return; }
   const c = e.target.closest(".chip"); if(!c) return;
-  active.has(c.dataset.k)?active.delete(c.dataset.k):active.add(c.dataset.k); renderChips(); renderList(new Set()); });
+  active.has(c.dataset.k)?active.delete(c.dataset.k):active.add(c.dataset.k); renderChips(); refilter(); });
 document.getElementById("pchips").addEventListener("click", e=>{ const c = e.target.closest(".chip"); if(!c) return;
-  pactive.has(c.dataset.p)?pactive.delete(c.dataset.p):pactive.add(c.dataset.p); renderPChips(); renderList(new Set()); });
-document.getElementById("q").addEventListener("input", e=>{ q = e.target.value.trim().toLowerCase(); renderList(new Set()); });
+  pactive.has(c.dataset.p)?pactive.delete(c.dataset.p):pactive.add(c.dataset.p); renderPChips(); refilter(); });
+let qTimer;
+document.getElementById("q").addEventListener("input", e=>{
+  clearTimeout(qTimer);
+  qTimer = setTimeout(()=>{ q = e.target.value.trim().toLowerCase(); if (q && !details) loadDetails().then(refilter); refilter(); }, 150);
+});
 
-let lastUpdated = 0;
+let lastUpdated = 0, polling = false;
 async function poll(){
+  if (polling || document.hidden) return; polling = true;
   try{
-    const r = await fetch("data.json?t="+Date.now(), {cache:"no-store"});
-    if (!r.ok) throw new Error(r.status);
-    const d = await r.json();
-    document.getElementById("status").textContent = `live · ${d.inbox_files} reports · ${new Date(d.updated*1000).toLocaleTimeString()}`;
-    if (d.updated === lastUpdated) return; lastUpdated = d.updated;
-    const newIds = new Set();
+    const meta = await (await fetch("meta.json?t="+Date.now(), {cache:"no-store"})).json();
+    document.getElementById("status").textContent = `${LOCAL?"live":"updated"} · ${meta.inbox_files} reports · ${new Date(meta.updated*1000).toLocaleTimeString()}`;
+    if (meta.updated === lastUpdated) return;
+    const d = await (await fetch("data.json?t="+meta.updated, {cache:"no-store"})).json();
+    lastUpdated = d.updated;
+    if (details){ detailsP = null; details = null; loadDetails(); }  // refresh stale details
+    const newIds = new Set(); let changed = false;
     for (const p of d.people){
       const old = people.get(p.id); people.set(p.id, p);
       if (!old){
         if (!first) newIds.add(p.id);
-        const m = L.marker([p.lat,p.lng], {icon:icon(p, !first), zIndexOffset:p.trans_nb?500:0}).bindPopup(popup(p), {maxWidth:330});
-        m.on("click", ()=>{ sel = p.id; document.querySelectorAll(".item").forEach(e=>e.classList.toggle("sel", e.dataset.id===p.id));
-          document.querySelector(`.item[data-id="${CSS.escape(p.id)}"]`)?.scrollIntoView({block:"nearest",behavior:"smooth"}); });
-        markers.set(p.id, m);
-      } else if (JSON.stringify(old) !== JSON.stringify(p)){
-        const m = markers.get(p.id); m.setLatLng([p.lat,p.lng]); m.setIcon(icon(p,false)); m.setPopupContent(popup(p));
+        markers.set(p.id, makeMarker(p, !first));
+      } else if (old.v !== p.v){
+        let m = markers.get(p.id);
+        if (!!old.trans_nb !== !!p.trans_nb){ const on = map.hasLayer(m); m.remove(); m = makeMarker(p,false); markers.set(p.id, m); if (on) m.addTo(map); }
+        else { m.setLatLng([p.lat,p.lng]); if (m.setStyle) m.setStyle(dotStyle(p)); }
+        changed = true;
       }
     }
-    first = false; renderChips(); renderPChips(); renderList(newIds);
+    first = false; renderChips(); renderPChips(); renderList(newIds, changed);
   }catch(e){ document.getElementById("status").textContent = "waiting for data…"; }
+  finally{ polling = false; }
 }
-renderChips(); renderPChips(); poll(); setInterval(poll, 3000);
+renderChips(); renderPChips(); poll(); setInterval(poll, POLL_MS);
+document.addEventListener("visibilitychange", ()=>{ if (!document.hidden) poll(); });
 </script>
 </body>
 </html>

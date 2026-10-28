@@ -279,11 +279,26 @@ def build():
         p["id"] = key
         out.append(p)
     out.sort(key=lambda p: p["added"])
-    tmp = OUT.with_suffix(".tmp")
-    tmp.write_text(json.dumps({"updated": int(time.time()), "count": len(out),
-                               "inbox_files": len(list(INBOX.glob('*.json'))), "people": out}))
-    tmp.replace(OUT)
+    meta = {"updated": int(time.time()), "count": len(out), "inbox_files": len(list(INBOX.glob("*.json")))}
+    # slim index for map + list + filters; full records go in details.json, loaded on demand
+    slim = []
+    for p in out:
+        v = hashlib.md5(json.dumps(p, sort_keys=True).encode()).hexdigest()[:8]
+        slim.append({k: p[k] for k in SLIM_FIELDS} | {"lat": round(p["lat"], 5), "lng": round(p["lng"], 5), "v": v})
+    write_json(OUT, {**meta, "people": slim})
+    write_json(OUT.with_name("details.json"), {"updated": meta["updated"], "people": {p["id"]: p for p in out}})
+    write_json(OUT.with_name("meta.json"), meta)
     return len(out)
+
+
+SLIM_FIELDS = ("id", "name", "pronouns", "pron_tags", "trans_nb", "precision", "suburb", "practice",
+               "keywords", "added", "telehealth_only")
+
+
+def write_json(path, obj):
+    tmp = path.with_suffix(".tmp")
+    tmp.write_text(json.dumps(obj, separators=(",", ":")))
+    tmp.replace(path)
 
 
 if __name__ == "__main__":
