@@ -48,7 +48,8 @@ input:focus{border-color:var(--lilac2)}
 .tags{margin-top:5px;display:flex;flex-wrap:wrap;gap:4px}
 .tag{font-size:11.5px;padding:0 5px;border-radius:2px;background:var(--lilacbg);color:var(--lilac)}
 #map{height:100%;background:#0e0e11}
-.leaflet-tile-pane{filter:invert(1) hue-rotate(200deg) saturate(.35) brightness(.85) contrast(.9);will-change:transform}
+/* fallback only: browsers without OffscreenCanvas get the CSS filter; others get pre-darkened tiles */
+.css-dark .leaflet-tile-pane{filter:invert(1) hue-rotate(200deg) saturate(.35) brightness(.85) contrast(.9)}
 .empty{padding:24px 16px;color:var(--dim)}
 /* markers */
 .pin{width:12px;height:12px;border-radius:50%;background:var(--lilac2);border:2px solid #0b0b0d;box-shadow:0 0 0 1px var(--lilac2),0 0 10px #a78bfa88}
@@ -103,8 +104,68 @@ const POLL_MS = LOCAL ? 3000 : 60000;   // live while agents run locally; lazy o
 const PAGE = 80;                         // list rows rendered per batch
 
 const map = L.map("map",{zoomControl:true, preferCanvas:true}).setView([-37.8136,144.9631],11);
-L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png",{
-  attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',maxZoom:19}).addTo(map);
+const TILE_URL = "https://tile.openstreetmap.org/{z}/{x}/{y}.png";
+const TILE_ATTR = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>';
+
+// Dark tiles: each tile is recoloured once in a worker with the same maths as the CSS filter
+// invert(1) hue-rotate(200deg) saturate(.35) brightness(.85) contrast(.9), so the compositor only
+// moves plain bitmaps while panning/zooming (a live CSS filter over the pane re-rasterises on mobile).
+const TILE_WORKER = `
+const rad = 200 * Math.PI / 180, a = Math.cos(rad), b = Math.sin(rad);
+const H = [.213+a*.787-b*.213, .715-a*.715-b*.715, .072-a*.072+b*.928,
+           .213-a*.213+b*.143, .715+a*.285+b*.140, .072-a*.072-b*.283,
+           .213-a*.213-b*.787, .715-a*.715+b*.715, .072+a*.928+b*.072];
+const s = .35, k = .85 * .9;  // saturate, then brightness*contrast slope
+const S = [.213+.787*s, .715-.715*s, .072-.072*s, .213-.213*s, .715+.285*s, .072-.072*s, .213-.213*s, .715-.715*s, .072+.928*s].map(v => v * k);
+const OFF = 255 * .5 * (1 - .9);
+const cl = v => v < 0 ? 0 : v > 255 ? 255 : v;
+function recolour(d){
+  for (let i = 0; i < d.length; i += 4){
+    const r0 = 255 - d[i], g0 = 255 - d[i+1], b0 = 255 - d[i+2];
+    const r = cl(H[0]*r0 + H[1]*g0 + H[2]*b0), g = cl(H[3]*r0 + H[4]*g0 + H[5]*b0), bb = cl(H[6]*r0 + H[7]*g0 + H[8]*b0);
+    d[i] = S[0]*r + S[1]*g + S[2]*bb + OFF; d[i+1] = S[3]*r + S[4]*g + S[5]*bb + OFF; d[i+2] = S[6]*r + S[7]*g + S[8]*bb + OFF;
+  }
+}
+const ctrl = new Map();
+onmessage = async e => {
+  const { id, url, ref, cancel } = e.data;
+  if (cancel){ ctrl.get(cancel)?.abort(); return; }
+  const ac = new AbortController(); ctrl.set(id, ac);
+  try {
+    const res = await fetch(url, { signal: ac.signal, mode: "cors", credentials: "omit", referrer: ref, referrerPolicy: "strict-origin-when-cross-origin" });
+    const bmp = await createImageBitmap(await res.blob());
+    const oc = new OffscreenCanvas(bmp.width, bmp.height), x = oc.getContext("2d", { willReadFrequently: true });
+    x.drawImage(bmp, 0, 0); bmp.close();
+    const im = x.getImageData(0, 0, oc.width, oc.height); recolour(im.data); x.putImageData(im, 0, 0);
+    const out = oc.transferToImageBitmap(); postMessage({ id, bmp: out }, [out]);
+  } catch (err) { postMessage({ id, err: String(err) }); }
+  finally { ctrl.delete(id); }
+};`;
+const canWorkerTiles = (() => { try { return typeof Worker !== "undefined" && !!new OffscreenCanvas(1,1).getContext("2d") && "createImageBitmap" in window; } catch { return false; } })();
+if (canWorkerTiles){
+  const url = URL.createObjectURL(new Blob([TILE_WORKER], {type:"text/javascript"}));
+  const pool = Array.from({length: Math.min(4, Math.max(2, (navigator.hardwareConcurrency||4) - 1))}, () => new Worker(url));
+  const jobs = new Map(); let seq = 0;
+  pool.forEach(w => w.onmessage = e => {
+    const { id, bmp, err } = e.data, job = jobs.get(id); if (!job) { bmp && bmp.close(); return; }
+    jobs.delete(id);
+    if (bmp) job.tile.getContext("bitmaprenderer").transferFromImageBitmap(bmp);
+    job.done(err ? new Error(err) : null, job.tile);
+  });
+  const DarkTiles = L.GridLayer.extend({
+    createTile(c, done){
+      const tile = document.createElement("canvas"); tile.width = tile.height = 256;
+      const id = ++seq; tile._job = id; jobs.set(id, { tile, done });
+      pool[id % pool.length].postMessage({ id, ref: location.href, url: L.Util.template(TILE_URL, { z: c.z, x: c.x, y: c.y }) });
+      return tile;
+    }
+  });
+  const layer = new DarkTiles({ attribution: TILE_ATTR, maxZoom: 19, updateWhenZooming: false, keepBuffer: 3 }).addTo(map);
+  layer.on("tileunload", e => { const id = e.tile._job; if (jobs.delete(id)) pool[id % pool.length].postMessage({ cancel: id }); });
+} else {
+  map.getContainer().classList.add("css-dark");
+  L.tileLayer(TILE_URL, { attribution: TILE_ATTR, maxZoom: 19 }).addTo(map);
+}
 
 const people = new Map(), markers = new Map();
 const active = new Set(), pactive = new Set(); let mode = "or", q = "", sel = null, first = true;
@@ -119,21 +180,35 @@ function loadDetails(){
   return detailsP;
 }
 
-// canvas renderer that paints a soft halo behind each dot (the old CSS box-shadow glow, but cheap)
-const GLOW = 2.8;
+// Pins: each dot style (glow halo + dot + ring) is pre-rendered once into a small sprite at device
+// pixel ratio, then stamped with drawImage — no per-pin path/gradient work on redraw.
+const GLOW = 2.8, sprites = new Map();
+function sprite(o, r){
+  const dpr = window.devicePixelRatio || 1, key = `${o.color}|${o.fillOpacity}|${o.weight}|${o.dashArray}|${r}|${dpr}`;
+  let sp = sprites.get(key); if (sp) return sp;
+  const R = r * GLOW, size = Math.ceil(R * 2 + o.weight + 2), c = document.createElement("canvas");
+  c.width = c.height = Math.ceil(size * dpr);
+  const x = c.getContext("2d"), m = size / 2; x.scale(dpr, dpr);
+  const g = x.createRadialGradient(m, m, r * .6, m, m, R);
+  g.addColorStop(0, "rgba(167,139,250,.5)"); g.addColorStop(1, "rgba(167,139,250,0)");
+  x.fillStyle = g; x.beginPath(); x.arc(m, m, R, 0, Math.PI * 2); x.fill();
+  x.beginPath(); x.arc(m, m, r, 0, Math.PI * 2);
+  if (o.fillOpacity){ x.globalAlpha = o.fillOpacity; x.fillStyle = o.fillColor; x.fill(); x.globalAlpha = 1; }
+  x.lineWidth = o.weight; x.strokeStyle = o.color; x.lineCap = x.lineJoin = "round";
+  if (o.dashArray) x.setLineDash(String(o.dashArray).split(/[ ,]+/).map(Number));
+  x.stroke();
+  sprites.set(key, sp = { c, size }); return sp;
+}
 const GlowCanvas = L.Canvas.extend({
   _updateCircle(layer){
     if (!this._drawing || layer._empty()) return;
-    const p = layer._point, ctx = this._ctx, r = Math.max(Math.round(layer._radius), 1), R = r * GLOW;
-    const g = ctx.createRadialGradient(p.x, p.y, r * .6, p.x, p.y, R);
-    g.addColorStop(0, "rgba(167,139,250,.5)"); g.addColorStop(1, "rgba(167,139,250,0)");
-    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(p.x, p.y, R, 0, Math.PI * 2); ctx.fill();
-    L.Canvas.prototype._updateCircle.call(this, layer);
+    const p = layer._point, sp = sprite(layer.options, Math.max(Math.round(layer._radius * 2) / 2, 1));
+    this._ctx.drawImage(sp.c, p.x - sp.size / 2, p.y - sp.size / 2, sp.size, sp.size);
   }
 });
 const GlowDot = L.CircleMarker.extend({
   _updateBounds(){ // include the halo so partial redraws don't leave smears
-    const R = this._radius * GLOW + this._clickTolerance(), p = this._point;
+    const R = this._radius * GLOW + this.options.weight + this._clickTolerance(), p = this._point;
     this._pxBounds = new L.Bounds(p.subtract([R, R]), p.add([R, R]));
   }
 });

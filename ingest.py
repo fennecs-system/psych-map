@@ -20,7 +20,8 @@ KEYWORDS = {
     "schema": r"\bschema",
     "plural": r"\bplural|multiplicity|system members|\bsystems?\b.*(alter|headmate)",
     "kink": r"kink|bdsm|fetish|\bleather",
-    "sex": r"\bsex",
+    # sex therapy / sexual health specifically — not "diverse sexualities" or sexual assault (that's trauma/lgbt)
+    "sex": r"\bsex[- ]?(therap|positive|work|educat|coach|counsel|addiction)|sexolog|psychosexual|\bsexual (health|dysfunction|difficult|function|concern|problem|desire|pain|wellbeing|wellness|issue|intimacy|therapy)|erectile|vaginismus|libido|premature ejaculation|\bintimacy (issue|concern|difficult)",
     "emdr": r"\bemdr\b|\bedmr\b|eye movement desensiti",
 }
 KW_RE = {k: re.compile(v, re.I) for k, v in KEYWORDS.items()}
