@@ -1,0 +1,21 @@
+[
+ {
+  "name": "Darren Wong",
+  "pronouns": "",
+  "title": "Psychologist, Counsellor",
+  "practice": "",
+  "address": "",
+  "suburb": "Mitcham",
+  "postcode": "3132",
+  "phone": "0382035496",
+  "email": "",
+  "website": "http://www.togetherinsights.com.au",
+  "booking_url": "",
+  "description": "I am dedicated to helping individuals and couples foster self-awareness, resilience, and meaningful change. Whether navigating personal challenges, relationship dynamics, or life transitions, I seek to empower clients with practical tools and insights in a non-judgmental, supportive and confidential environment.",
+  "specialties": "PTSD, Trauma Recovery, EMDR, Trauma-Informed",
+  "telehealth": true,
+  "telehealth_only": false,
+  "identity": "",
+  "source_url": "https://www.goodtherapy.com.au/darren_wong"
+ }
+]

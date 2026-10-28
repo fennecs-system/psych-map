@@ -1,0 +1,5 @@
+# one name per line; matched after name normalisation. Reason after '#'.
+Sol W            # Therapy Shmerapy, Perth-based
+Darcy Watson-Russell  # Therapy Shmerapy, Perth-based
+Caitie G         # Therapy Shmerapy, Sydney-based
+Oliver Brooke    # mainly WA

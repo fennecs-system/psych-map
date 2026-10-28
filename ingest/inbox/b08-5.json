@@ -1,0 +1,16 @@
+[
+ {"name": "Nikki Pascarl", "pronouns": "", "title": "Psychologist, EMDRAA Accredited Practitioner", "practice": "Nikki Pascarl Psychology",
+  "address": "", "suburb": "Pakenham", "postcode": "", "phone": "", "email": "info@nikkipascarl.com.au", "website": "https://nikkipascarl.com.au",
+  "booking_url": "",
+  "description": "Nikki takes a respectful and non-judgemental approach of all people regardless of history, ethnicity or culture, subculture, LGBTIQA+, neurodiversity, internal system structure, and the intersectionality of any/all of the above. Her primary framework is Eye Movement Desensitization and Reprocessing (EMDR). Clinical focus: Post-Traumatic Stress Disorder (PTSD), Complex PTSD, Dissociative Identity Disorder (DID), Otherwise Specified Dissociative Disorder (OSDD), Borderline Personality Disorder, attachment wounds, childhood trauma, abuse & neglect, and domestic violence.",
+  "specialties": "DID, OSDD, internal system structure, EMDR, PTSD, complex PTSD, childhood trauma, attachment, BPD, LGBTIQA+, neurodiversity, supervision",
+  "telehealth": false, "telehealth_only": false, "identity": "",
+  "source_url": "https://nikkipascarl.com.au"},
+ {"name": "Martin Mitrevski", "pronouns": "", "title": "Clinical Psychologist", "practice": "Fitzroy North Medical Clinic",
+  "address": "", "suburb": "Fitzroy North", "postcode": "3068", "phone": "(03) 9125 3991", "email": "", "website": "https://fitzroynorthmedical.com.au/team/martin/",
+  "booking_url": "https://www.hotdoc.com.au/medical-centres/fitzroy-north-VIC-3068/fitzroy-north-medical-clinic/doctors/martin-mitrevski",
+  "description": "Martin is a clinical psychologist and board-approved supervisor providing services to adults (18+) in areas including Post-Traumatic Stress Disorder (PTSD), Complex PTSD (cPTSD), Dissociative Spectrum Disorder, OCD, grief, substance use and emotion regulation. Therapeutic approaches include CBT, ACT, DBT, Schema Therapy, Eye-Movement Desensitisation and Reprocessing (EMDR) Therapy, and Parts-Work (Structural Dissociation Model of Personality, Internal Family Systems). Medicare provider.",
+  "specialties": "dissociative disorders, structural dissociation, parts work, IFS, EMDR, schema therapy, PTSD, complex PTSD, DBT",
+  "telehealth": false, "telehealth_only": false, "identity": "",
+  "source_url": "https://fitzroynorthmedical.com.au/team/martin/"}
+]

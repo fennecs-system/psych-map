@@ -1,0 +1,5 @@
+# "listed name => canonical name" — merges entries the name matcher can't join
+Stonewater Art Therapy => Samuel Hardidge
+Dani => Dani Croaker
+Creating Wellbeing Melbourne => Rae Sabine
+Dani (Howearth Psychology) => Dani Croaker

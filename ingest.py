@@ -14,7 +14,8 @@ MELB = (-37.8136, 144.9631)
 KEYWORDS = {
     "trans": r"\btrans(gender|\b|-|\*)|gender[- ]diverse|non[- ]?binary|gender affirm",
     "lgbt": r"lgbt|queer|rainbow|gay|lesbian|bisexual",
-    "dissociation": r"dissociat|\bdid\b|osdd",
+    "dissociation": r"dissociat|\bosdd\b",
+    "did": r"(?-i:\bDID\b)|dissociative identity|\bosdd\b|other specified dissociative|multiple personality",
     "trauma": r"trauma|ptsd",
     "schema": r"\bschema",
     "plural": r"\bplural|multiplicity|system members|\bsystems?\b.*(alter|headmate)",
@@ -149,7 +150,41 @@ def merge(a, b):
     return a
 
 
+EXCLUDE = ROOT / "ingest" / "exclude.txt"
+
+
+def excluded():
+    if not EXCLUDE.exists():
+        return set()
+    names = (l.split("#")[0].strip() for l in EXCLUDE.read_text().splitlines())
+    return {"".join(name_tokens(n)) for n in names if n}
+
+
+ALIASES = ROOT / "ingest" / "aliases.txt"
+OVERRIDES = ROOT / "ingest" / "overrides.json"
+
+
+def aliases():
+    out = {}
+    if ALIASES.exists():
+        for l in ALIASES.read_text().splitlines():
+            l = l.split("#")[0]
+            if "=>" in l:
+                a, b = (x.strip() for x in l.split("=>", 1))
+                out[a.lower()] = b
+    return out
+
+
+def overrides():
+    try:
+        return {"".join(name_tokens(k)): v for k, v in json.loads(OVERRIDES.read_text()).items()}
+    except Exception:
+        return {}
+
+
 def build():
+    skip = excluded()
+    alias = aliases()
     recs = []
     for f in sorted(INBOX.glob("*.json"), key=lambda p: p.stat().st_mtime):
         try:
@@ -161,10 +196,11 @@ def build():
                 continue
             text = " ".join(str(r.get(k, "")) for k in ("description", "specialties", "practice", "keywords"))
             kws = [k for k, rx in KW_RE.items() if rx.search(text)]
-            if not kws:
+            if not kws or "".join(name_tokens(str(r["name"]))) in skip:
                 continue
+            nm = re.sub(r"\s+", " ", str(r["name"])).strip()
             recs.append({
-                "name": re.sub(r"\s+", " ", str(r["name"])).strip(),
+                "name": alias.get(nm.lower(), nm),
                 "pronouns": str(r.get("pronouns") or "").strip(),
                 "title": r.get("title") or "",
                 "practice": r.get("practice") or "",
@@ -217,7 +253,11 @@ def build():
     for i, r in enumerate(recs):
         root = find(i)
         people[root] = merge(people[root], r) if root in people else r
+    ov = overrides()
     for p in people.values():
+        for k, v in ov.get("".join(name_tokens(p["name"])), {}).items():
+            if not k.startswith("_"):
+                p[k] = v
         p["trans_nb"] = bool(TRANS_ID_RE.search(p["identity_all"]) or SELF_ID_RE.search(p["description"]))
         p["identity"] = re.sub(r"\s+", " ", p.pop("identity_all")).strip()
         p["pron_tags"] = pron_tags(p["pronouns"])
@@ -249,7 +289,7 @@ def build():
 if __name__ == "__main__":
     last_sig = None
     while True:
-        sig = tuple((f.name, f.stat().st_mtime) for f in INBOX.glob("*.json"))
+        sig = tuple((f.name, f.stat().st_mtime) for f in [*INBOX.glob("*.json"), *[x for x in (EXCLUDE, ALIASES, OVERRIDES) if x.exists()]])
         if sig != last_sig:
             n = build()
             print(time.strftime("%H:%M:%S"), f"{len(sig)} files -> {n} practitioners", flush=True)
