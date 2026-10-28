@@ -40,7 +40,7 @@
  {
   "name": "Laura Raniere",
   "pronouns": "",
-  "title": "Medicare Psychologist Provider",
+  "title": "Psychologist",
   "practice": "",
   "address": "195 Whitehorse Rd, Suite 9",
   "suburb": "Blackburn",
@@ -59,7 +59,7 @@
  {
   "name": "Andrea Middling",
   "pronouns": "",
-  "title": "Medicare Psychologist Provider",
+  "title": "Psychologist",
   "practice": "",
   "address": "Unit 4/176 Boronia Road",
   "suburb": "Boronia",
@@ -78,7 +78,7 @@
  {
   "name": "Mandy Biancucci",
   "pronouns": "",
-  "title": "Medicare Psychologist Provider",
+  "title": "Psychologist",
   "practice": "",
   "address": "2 Young Street",
   "suburb": "Moonee Ponds",
@@ -97,7 +97,7 @@
  {
   "name": "Cecilia Green",
   "pronouns": "",
-  "title": "Medicare Psychologist Provider",
+  "title": "Psychologist",
   "practice": "",
   "address": "",
   "suburb": "Brunswick",
@@ -116,12 +116,12 @@
  {
   "name": "Dr Melanie Schuijers",
   "pronouns": "she/her",
-  "title": "Medicare Clinical Psychologist Provider",
+  "title": "Clinical Psychologist",
   "practice": "",
   "address": "Luma Room, 108/1215-219 Albion St",
   "suburb": "Brunswick",
   "postcode": "3056",
-  "phone": "0000000000",
+  "phone": "",
   "email": "",
   "website": "http://www.lumaroom.com.au/",
   "booking_url": "",
@@ -135,7 +135,7 @@
  {
   "name": "Bethany Morris",
   "pronouns": "",
-  "title": "Medicare Clinical Psychologist Provider",
+  "title": "Clinical Psychologist",
   "practice": "",
   "address": "503 Sydney Rd",
   "suburb": "Brunswick",

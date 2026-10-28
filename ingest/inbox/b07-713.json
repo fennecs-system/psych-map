@@ -2,7 +2,7 @@
  {
   "name": "Karen Haydon",
   "pronouns": "",
-  "title": "Medicare Psychologist Provider",
+  "title": "Psychologist",
   "practice": "",
   "address": "1336-1338 Malvern Rd, Ground Floor",
   "suburb": "MALVERN",
@@ -40,7 +40,7 @@
  {
   "name": "Dr Daniel Shaw",
   "pronouns": "",
-  "title": "Medicare Psychologist Provider",
+  "title": "Psychologist",
   "practice": "",
   "address": "Suite 7, 493 Riversdale Road",
   "suburb": "Camberwell",
@@ -59,7 +59,7 @@
  {
   "name": "Elke Ponczek",
   "pronouns": "",
-  "title": "Medicare Psychologist Provider",
+  "title": "Psychologist",
   "practice": "",
   "address": "",
   "suburb": "Melbourne",
@@ -78,7 +78,7 @@
  {
   "name": "Azul Rosenstein",
   "pronouns": "",
-  "title": "Medicare Clinical Psychologist Provider",
+  "title": "Clinical Psychologist",
   "practice": "",
   "address": "",
   "suburb": "McKinnon",
@@ -97,12 +97,12 @@
  {
   "name": "Dr Nicolas Kessous",
   "pronouns": "",
-  "title": "Medicare Psychologist Provider",
+  "title": "Psychologist",
   "practice": "",
   "address": "",
   "suburb": "Melbourne",
   "postcode": "3000",
-  "phone": "00 0000 0000",
+  "phone": "",
   "email": "",
   "website": "https://nicolaskessous.com/",
   "booking_url": "",
@@ -116,7 +116,7 @@
  {
   "name": "Chien Ya Su",
   "pronouns": "",
-  "title": "Medicare Psychologist Provider",
+  "title": "Psychologist",
   "practice": "",
   "address": "Online via Telehealth (Video Consult)",
   "suburb": "Melbourne",
@@ -135,7 +135,7 @@
  {
   "name": "Dr Philip Walsh",
   "pronouns": "",
-  "title": "Medicare Clinical Psychologist Provider",
+  "title": "Clinical Psychologist",
   "practice": "",
   "address": "12 Collins Street",
   "suburb": "Melbourne",

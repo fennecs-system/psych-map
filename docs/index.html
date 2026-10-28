@@ -33,6 +33,10 @@ input:focus{border-color:var(--lilac2)}
 .mode{cursor:pointer;width:26px;height:26px;display:inline-flex;align-items:center;justify-content:center;border:1px solid var(--lilac2);border-radius:3px;color:var(--lilac);background:var(--lilacbg);font:700 13px "JetBrains Mono",monospace;user-select:none}
 .plabel{color:var(--dim);font-size:12px;align-self:center;margin-right:2px}
 .mode:hover{background:#2a2440}
+.tbtn{cursor:pointer;height:26px;padding:0 7px;display:inline-flex;align-items:center;gap:5px;border:1px solid var(--line);border-radius:3px;color:var(--dim);font-size:12.5px;user-select:none;flex:none}
+.tbtn span{font-size:15px;line-height:1;filter:grayscale(.7) opacity(.7)}
+.tbtn.on{border-color:var(--lilac2);background:var(--lilacbg);color:var(--lilac)}
+.tbtn.on span{filter:none}
 .chip.on{color:var(--lilac);border-color:var(--lilac2);background:var(--lilacbg)}
 .chip b{font-weight:400;opacity:.6;margin-left:3px}
 #list{overflow-y:auto;flex:1;min-height:0;overscroll-behavior:contain}
@@ -168,7 +172,7 @@ if (canWorkerTiles){
 }
 
 const people = new Map(), markers = new Map();
-const active = new Set(), pactive = new Set(); let mode = "or", q = "", sel = null, first = true;
+const active = new Set(), pactive = new Set(); let transOnly = false, mode = "or", q = "", sel = null, first = true;
 let details = null, detailsP = null;
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const safeUrl = u => /^https?:\/\//i.test(u||"") ? u : "";
@@ -248,7 +252,9 @@ function popup(id){
     ${book?`<a class="btn" href="${esc(book)}" target="_blank" rel="noopener">→ ${p.booking_url?"book":"website"}</a>`:""}
     ${p.sources?`<div class="row" style="color:var(--dim);font-size:10px;margin-top:8px">src: ${p.sources.map((s,i)=>`<a href="${esc(safeUrl(s))}" target="_blank" rel="noopener">[${i+1}]</a>`).join(" ")} · loc: ${esc(p.precision)}</div>`:""}</div>`;
 }
+const isTrans = p => p.trans_nb || p.keywords.includes("trans");
 function matches(p){
+  if (transOnly && !isTrans(p)) return false;
   if (pactive.size && !(p.pron_tags||[]).some(t=>pactive.has(t))) return false;
   if (active.size){
     const has = k => p.keywords.includes(k) || (k==="trans" && p.trans_nb);
@@ -262,7 +268,7 @@ function matches(p){
 function renderChips(){
   const counts = Object.fromEntries(KW.map(k=>[k,0]));
   people.forEach(p=>p.keywords.forEach(k=>counts[k]!=null&&counts[k]++));
-  document.getElementById("chips").innerHTML = `<span class="mode" id="mode" title="${mode==="and"?"match ALL selected (and) — click for any":"match ANY selected (or) — click for all"}">${mode==="and"?"∧":"∨"}</span>` + KW.map(k=>`<span class="chip${active.has(k)?" on":""}" data-k="${k}">${k}<b>${counts[k]}</b></span>`).join("");
+  document.getElementById("chips").innerHTML = `<span class="mode" id="mode" title="${mode==="and"?"match ALL selected (and) — click for any":"match ANY selected (or) — click for all"}">${mode==="and"?"∧":"∨"}</span>` + `<span class="tbtn${transOnly?" on":""}" id="tbtn" title="trans-identifying practitioners + those working with trans clients (identifying ones listed first)"><span>🏳️‍⚧️</span>${[...people.values()].filter(isTrans).length}</span>` + KW.map(k=>`<span class="chip${active.has(k)?" on":""}" data-k="${k}">${k}<b>${counts[k]}</b></span>`).join("");
 }
 function renderPChips(){
   const counts = Object.fromEntries(PRON.map(k=>[k,0]));
@@ -287,7 +293,7 @@ new IntersectionObserver(es=>{ if (es.some(e=>e.isIntersecting)) appendRows(); }
 
 let filterQueued = false;
 function renderList(newIds, force){
-  shown = [...people.values()].filter(matches).sort((a,b)=>b.added-a.added || a.name.localeCompare(b.name));
+  shown = [...people.values()].filter(matches).sort((a,b)=>(transOnly ? (b.trans_nb?1:0)-(a.trans_nb?1:0) : 0) || b.added-a.added || a.name.localeCompare(b.name));
   const vis = new Set(shown.map(p=>p.id));
   markers.forEach((m,id)=>{ const v = vis.has(id), on = map.hasLayer(m); if (v && !on) m.addTo(map); else if (!v && on) m.remove(); });
   document.getElementById("count").textContent = `${shown.length}/${people.size} shown`;
@@ -316,6 +322,7 @@ function markerClick(id){
 }
 listEl.addEventListener("click", e=>{ const it = e.target.closest(".item"); if (it) focus(it.dataset.id); });
 document.getElementById("chips").addEventListener("click", e=>{
+  if (e.target.closest("#tbtn")){ transOnly = !transOnly; renderChips(); refilter(); return; }
   if (e.target.closest("#mode")){ mode = mode==="and"?"or":"and"; renderChips(); refilter(); return; }
   const c = e.target.closest(".chip"); if(!c) return;
   active.has(c.dataset.k)?active.delete(c.dataset.k):active.add(c.dataset.k); renderChips(); refilter(); });
