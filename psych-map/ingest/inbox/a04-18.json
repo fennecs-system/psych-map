@@ -1,0 +1,22 @@
+[
+ {
+  "name": "Mr Simon Kimm",
+  "pronouns": "he/him",
+  "title": "Psychologist",
+  "practice": "Compass Psychology",
+  "address": "344a Barkly Street",
+  "suburb": "Footscray",
+  "postcode": "3011",
+  "phone": "03 8609 1925",
+  "email": "",
+  "website": "http://www.compasspsychology.com.au",
+  "booking_url": "https://www.halaxy.com/book/mr-simon-kimm/psychologist/1182681/1092111",
+  "description": "Simon supports clients experiencing a range of issues and has a special interest in the areas of Veteran, first responders, and medical practitioner/staff mental health, men's mental health, indigenous mental health, gender identity/sexuality, and cross-cultural psychology.",
+  "specialties": "sexuality",
+  "telehealth": false,
+  "telehealth_only": false,
+  "trans_nb": false,
+  "identity": "",
+  "source_url": "https://www.halaxy.com/profile/mr-simon-kimm/psychologist/1182681?clinic=1092111"
+ }
+]

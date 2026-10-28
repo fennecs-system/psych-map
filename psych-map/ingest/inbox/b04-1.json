@@ -1,0 +1,18 @@
+[
+{"name": "Brydan Xavier", "pronouns": "He/Him", "title": "Director and Principal Psychologist", "practice": "The Liminal Clinic",
+ "address": "386 Malvern Road", "suburb": "Prahran", "postcode": "3181", "phone": "(03) 7042 9820", "email": "hello@liminalclinic.com.au",
+ "website": "https://liminalclinic.com.au", "booking_url": "https://liminalclinic.com.au/team/brydan-xavier/",
+ "description": "Director and Principal Psychologist. Works with adults navigating complex trauma, neurodivergence, gender and sexuality. Mostly therapy, including EMDR and EMDR 2.0, alongside Autism, ADHD and WPATH-aligned assessments. Uses Schema Therapy, ACT, CBT, DBT; trauma-informed, LGBTIQASB+ inclusive and gender-affirming, kink-aware, HIV-friendly. Offers sexual health and intimacy counselling. Limited capacity, accepting applications for 2027.",
+ "specialties": "complex trauma, EMDR, EMDR 2.0, schema therapy, neurodivergence, gender and sexuality, WPATH assessments, autism/ADHD assessment, sexual health and intimacy, kink-aware, HIV-friendly, National Redress Scheme",
+ "telehealth": true, "telehealth_only": false,
+ "identity": "'Neurodivergent, queer, and not pretending otherwise'; 'Brydan is AuDHD ... and a member of the LGBTIQASB+ community'",
+ "source_url": "https://liminalclinic.com.au/team/brydan-xavier/"},
+{"name": "Minh Anh Nguyen", "pronouns": "She/Her", "title": "Psychologist", "practice": "The Liminal Clinic",
+ "address": "386 Malvern Road", "suburb": "Prahran", "postcode": "3181", "phone": "(03) 7042 9820", "email": "hello@liminalclinic.com.au",
+ "website": "https://liminalclinic.com.au", "booking_url": "https://liminalclinic.com.au/team/minh-anh-nguyen/",
+ "description": "Psychologist, online on Wednesdays, from 7 October 2026. Background includes close work with trans and gender-diverse clients; works within a neuroaffirming, trauma-informed and identity-affirming frame. Works with 'Queer and trans people who want a therapist who does not need educating', adult children of migrants and the Asian diaspora. Special interests include trauma, minority stress, gender and sexuality. Works in English and Vietnamese.",
+ "specialties": "trauma, gender and sexuality, minority stress, ADHD and autism in adults, Asian diaspora, adult children of migrants, internalised racism, disordered eating, CBT, ACT, DBT",
+ "telehealth": true, "telehealth_only": true,
+ "identity": "'a second-generation Vietnamese Australian, with lived experience of late-identified neurodivergence'",
+ "source_url": "https://liminalclinic.com.au/team/minh-anh-nguyen/"}
+]

@@ -1,0 +1,22 @@
+[
+ {
+  "name": "Dr Adeline Lee",
+  "pronouns": "",
+  "title": "Clinical Psychologist",
+  "practice": "Dr Adeline Lee Psychology",
+  "address": "",
+  "suburb": "Northcote",
+  "postcode": "",
+  "phone": "(03) 9079 7936",
+  "email": "",
+  "website": "https://dradelinelee.com/",
+  "booking_url": "",
+  "description": "Adeline is an EMDRAA accredited Eye Movement Desensitisation and Reprocessing (EMDR) consultant and offers EMDR Intensive Program intakes. Her doctoral thesis examined the relationship between childhood trauma, attachment styles and women's mental health. Therapies include Trauma-Focused CBT, Schema Therapy and trauma informed yoga therapy. Practises in Northcote, Brunswick and online.",
+  "specialties": "EMDR, EMDR intensive, childhood trauma, schema therapy, trauma-focused CBT, attachment, EMDR consultation",
+  "telehealth": true,
+  "telehealth_only": false,
+  "trans_nb": false,
+  "identity": "",
+  "source_url": "https://dradelinelee.com/"
+ }
+]

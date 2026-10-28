@@ -1,0 +1,42 @@
+[
+ {
+  "name": "Rachel Ballinger",
+  "pronouns": "",
+  "title": "Psychologist",
+  "practice": "Cova Psychology",
+  "address": "19/12 Collins St",
+  "suburb": "Melbourne",
+  "postcode": "3000",
+  "phone": "",
+  "email": "",
+  "website": "https://covapsychology.com/",
+  "booking_url": "https://www.halaxy.com/book/rachel-ballinger/psychologist/1706771/37756",
+  "description": "Traumatic experiences and post-traumatic stress Problematic or deviant sexual behaviours",
+  "specialties": "sexual, traumatic",
+  "telehealth": false,
+  "telehealth_only": false,
+  "trans_nb": false,
+  "identity": "",
+  "source_url": "https://www.halaxy.com/profile/rachel-ballinger/psychologist/1706771?clinic=37756"
+ },
+ {
+  "name": "Mr Kevin Vun",
+  "pronouns": "he/him",
+  "title": "Psychotherapist",
+  "practice": "Inner Haven Therapy",
+  "address": "71 Gipps St",
+  "suburb": "Collingwood",
+  "postcode": "3066",
+  "phone": "",
+  "email": "",
+  "website": "http://innerhaventherapy.com.au",
+  "booking_url": "https://www.halaxy.com/book/mr-kevin-tze-siang-vun/psychotherapist/447941/1335829",
+  "description": "Melbourne Psychotherapist, Counsellor & Relationship Therapist | Gottman-Trained | EMDR | LGBTQIA+ & BIPOC-Owned Working holistically across relationship and individual concerns, Kevin integrates Gottman Method, humanistic, EMDR, somatic and a broad range of approaches, including Eastern philosophies like mindfulness and meditation — tailored to each client rather than applied as a formula. He works with all relationship structures — monogamous, ethically non-monogamous, polyamorous, and LGBTQIA+ partnerships — and supports individuals navigating anxiety, depression, trauma, identity, cultural transitions, and personal growth. His practice is queer-led, BIPOC-owned, kink-aware, and culturally responsive — a genuinely inclusive space where clients from all backgrounds, identities, and relationship styles are welcome.",
+  "specialties": "emdr, kink, lgbtqia+, queer, sex, sexual, sexuality, trauma",
+  "telehealth": true,
+  "telehealth_only": false,
+  "trans_nb": false,
+  "identity": "",
+  "source_url": "https://www.halaxy.com/profile/mr-kevin-tze-siang-vun/psychotherapist/447941?clinic=1335829"
+ }
+]
